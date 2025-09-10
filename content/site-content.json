@@ -1,0 +1,117 @@
+{
+    "meta": {
+      "title": "Wan2.2 网站",
+      "description": "欢迎来到 Wan2.2 网站",
+      "keywords": "设计,创意,网站"
+    },
+    "hero": {
+      "badge": "新版本发布",
+      "title": "欢迎使用 Wan2.2",
+      "description": "这是一个创新的网站设计平台",
+      "primaryCta": {
+        "text": "开始使用",
+        "href": "#get-started"
+      },
+      "secondaryCta": {
+        "text": "了解更多",
+        "href": "#why"
+      }
+    },
+    "why": {
+      "heading": "为什么选择我们",
+      "subheading": "我们的独特优势",
+      "cards": [
+        {
+          "title": "易于使用",
+          "description": "简单直观的操作界面",
+          "icon": "easy"
+        },
+        {
+          "title": "功能强大",
+          "description": "满足各种设计需求",
+          "icon": "powerful"
+        },
+        {
+          "title": "高效快捷",
+          "description": "快速完成设计工作",
+          "icon": "fast"
+        }
+      ]
+    },
+    "how": {
+      "heading": "如何使用",
+      "subheading": "简单三步即可开始",
+      "steps": [
+        {
+          "number": "1",
+          "title": "注册账号",
+          "description": "创建您的个人账户",
+          "icon": "register"
+        },
+        {
+          "number": "2",
+          "title": "选择模板",
+          "description": "从多种模板中选择",
+          "icon": "template"
+        },
+        {
+          "number": "3",
+          "title": "开始设计",
+          "description": "自定义您的设计",
+          "icon": "design"
+        }
+      ]
+    },
+    "features": {
+      "heading": "主要特性",
+      "subheading": "探索我们的核心功能",
+      "features": [
+        {
+          "title": "响应式设计",
+          "description": "适配各种设备屏幕"
+        },
+        {
+          "title": "丰富模板",
+          "description": "海量模板选择"
+        },
+        {
+          "title": "实时预览",
+          "description": "即时查看设计效果"
+        },
+        {
+          "title": "团队协作",
+          "description": "多人同时编辑"
+        },
+        {
+          "title": "一键部署",
+          "description": "快速发布网站"
+        },
+        {
+          "title": "技术支持",
+          "description": "7x24小时服务"
+        }
+      ]
+    },
+    "faq": {
+      "heading": "常见问题",
+      "subheading": "您可能想知道的问题",
+      "questions": [
+        {
+          "question": "如何开始使用？",
+          "answer": "只需注册账号即可开始使用我们的服务。"
+        },
+        {
+          "question": "支持哪些支付方式？",
+          "answer": "我们支持信用卡、支付宝等多种支付方式。"
+        },
+        {
+          "question": "能否退款？",
+          "answer": "是的，我们提供30天内无条件退款。"
+        },
+        {
+          "question": "需要技术支持？",
+          "answer": "我们的技术支持团队随时为您服务。"
+        }
+      ]
+    }
+  }
