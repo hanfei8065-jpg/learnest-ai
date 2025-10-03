@@ -1,22 +1,13 @@
-// middleware.ts  —— 最小可用版，只给 /api/* 加 CORS，其他路径不动
-import type { NextRequest } from 'next/server'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
+// 这里是真正的中间件函数
 export function middleware(req: NextRequest) {
-  // 只处理 /api/* 路径
-  if (req.nextUrl.pathname.startsWith('/api/')) {
-    const res = NextResponse.next()
-    res.headers.set('Access-Control-Allow-Origin', '*')
-    res.headers.set('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
-    res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-    res.headers.set('Access-Control-Max-Age', '86400')
-    return res
-  }
-  // 其他页面不做处理
+  // 可以在这里加拦截逻辑，目前直接放行
   return NextResponse.next()
 }
 
-// 让中间件仅匹配 /api/*
+// 配置哪些路由启用中间件
 export const config = {
   matcher: ['/api/:path*'],
 }
+
