@@ -34,7 +34,9 @@ class ModelManager {
 
     // 如果模型文件不存在，从assets复制
     if (!modelFile.existsSync()) {
-      final modelBytes = await rootBundle.load('assets/models/question_detector.tflite');
+      final modelBytes = await rootBundle.load(
+        'assets/models/question_detector.tflite',
+      );
       await modelFile.writeAsBytes(modelBytes.buffer.asUint8List());
     }
 
@@ -49,28 +51,30 @@ class ModelManager {
     try {
       // 1. 加载并预处理图像
       final processedImage = await _preprocessImage(imageFile);
-      
+
       // 2. 运行模型推理
       final output = List<double>.filled(100 * 5, 0); // 最多检测100个区域，每个5个值
       final inputs = [processedImage];
       final outputs = {0: output};
-      
+
       _interpreter!.runForMultipleInputs(inputs, outputs);
-      
+
       // 3. 解析输出结果
       final boxes = <Rect>[];
       for (var i = 0; i < output.length; i += 5) {
         final confidence = output[i + 4];
         if (confidence < 0.5) continue; // 置信度过滤
-        
-        boxes.add(Rect.fromLTRB(
-          output[i] * imageFile.lengthSync(),
-          output[i + 1] * imageFile.lengthSync(),
-          output[i + 2] * imageFile.lengthSync(),
-          output[i + 3] * imageFile.lengthSync(),
-        ));
+
+        boxes.add(
+          Rect.fromLTRB(
+            output[i] * imageFile.lengthSync(),
+            output[i + 1] * imageFile.lengthSync(),
+            output[i + 2] * imageFile.lengthSync(),
+            output[i + 3] * imageFile.lengthSync(),
+          ),
+        );
       }
-      
+
       // 4. 应用非极大值抑制
       return _nonMaxSuppression(boxes, 0.5);
     } catch (e) {
@@ -84,10 +88,10 @@ class ModelManager {
     final imageBytes = await imageFile.readAsBytes();
     final image = img.decodeImage(imageBytes);
     if (image == null) throw Exception('无法解码图像');
-    
+
     // 调整大小
     final resized = img.copyResize(image, width: 640, height: 640);
-    
+
     // 转换为浮点数组并归一化
     final buffer = List<double>.filled(640 * 640, 0);
     for (var y = 0; y < resized.height; y++) {
@@ -96,42 +100,43 @@ class ModelManager {
         buffer[y * resized.width + x] = (pixel >> 16 & 0xFF) / 255.0;
       }
     }
-    
+
     return buffer;
   }
 
   List<Rect> _nonMaxSuppression(List<Rect> boxes, double threshold) {
     if (boxes.isEmpty) return [];
-    
+
     // 按面积排序
     boxes.sort((a, b) => (b.width * b.height).compareTo(a.width * a.height));
-    
+
     final selected = <Rect>[];
     final suppressed = Set<int>();
-    
+
     for (var i = 0; i < boxes.length; i++) {
       if (suppressed.contains(i)) continue;
-      
+
       selected.add(boxes[i]);
-      
+
       for (var j = i + 1; j < boxes.length; j++) {
         if (suppressed.contains(j)) continue;
-        
+
         if (_calculateIoU(boxes[i], boxes[j]) > threshold) {
           suppressed.add(j);
         }
       }
     }
-    
+
     return selected;
   }
 
   double _calculateIoU(Rect box1, Rect box2) {
     final intersection = box1.intersect(box2);
-    final union = box1.width * box1.height +
-                 box2.width * box2.height -
-                 intersection.width * intersection.height;
-    
+    final union =
+        box1.width * box1.height +
+        box2.width * box2.height -
+        intersection.width * intersection.height;
+
     return (intersection.width * intersection.height) / union;
   }
 

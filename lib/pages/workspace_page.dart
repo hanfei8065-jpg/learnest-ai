@@ -1,15 +1,18 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
-import 'dart:ui' as ui;
 
 class WorkspacePage extends StatefulWidget {
   final String question;
   final Function(String) onSubmitAnswer;
+  final File? capturedImage; // 单张图片（单题模式）
+  final List<File>? capturedImages; // 多张图片（多题模式）
 
   const WorkspacePage({
     super.key,
     required this.question,
     required this.onSubmitAnswer,
+    this.capturedImage, // 可选参数
+    this.capturedImages, // 可选参数
   });
 
   @override
@@ -80,11 +83,32 @@ class _WorkspacePageState extends State<WorkspacePage> {
       ),
       body: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.blue.withOpacity(0.1),
-            child: Text(widget.question, style: const TextStyle(fontSize: 18)),
-          ),
+          // 题目显示区域
+          if (widget.capturedImage != null)
+            Container(
+              width: double.infinity,
+              height: 200,
+              padding: const EdgeInsets.all(16),
+              color: Colors.blue.withOpacity(0.1),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  image: DecorationImage(
+                    image: FileImage(widget.capturedImage!),
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            )
+          else if (widget.question.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(16),
+              color: Colors.blue.withOpacity(0.1),
+              child: Text(
+                widget.question,
+                style: const TextStyle(fontSize: 18),
+              ),
+            ),
           if (_showCalculator)
             Container(
               height: 240,

@@ -33,9 +33,7 @@ class QualityScoreOverlay extends StatelessWidget {
             color: Colors.black87,
             borderRadius: BorderRadius.circular(30),
           ),
-          child: isExpanded
-              ? _buildExpandedView()
-              : _buildCollapsedView(),
+          child: isExpanded ? _buildExpandedView() : _buildCollapsedView(),
         ),
       ),
     );
@@ -55,11 +53,7 @@ class QualityScoreOverlay extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-          const Icon(
-            Icons.expand_more,
-            color: Colors.white,
-            size: 16,
-          ),
+          const Icon(Icons.expand_more, color: Colors.white, size: 16),
         ],
       ),
     );
@@ -102,19 +96,12 @@ class QualityScoreOverlay extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               score.issues.first,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
-              ),
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
             ),
           ],
           const SizedBox(height: 4),
           const Center(
-            child: Icon(
-              Icons.expand_less,
-              color: Colors.white,
-              size: 16,
-            ),
+            child: Icon(Icons.expand_less, color: Colors.white, size: 16),
           ),
         ],
       ),
@@ -130,10 +117,7 @@ class QualityScoreOverlay extends StatelessWidget {
             width: 40,
             child: Text(
               label,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
-              ),
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
             ),
           ),
           Expanded(
@@ -163,10 +147,7 @@ class QualityScoreOverlay extends StatelessWidget {
             width: 30,
             child: Text(
               '$score',
-              style: TextStyle(
-                color: _getScoreColor(score),
-                fontSize: 12,
-              ),
+              style: TextStyle(color: _getScoreColor(score), fontSize: 12),
               textAlign: TextAlign.right,
             ),
           ),

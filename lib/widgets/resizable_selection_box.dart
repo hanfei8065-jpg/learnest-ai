@@ -4,7 +4,7 @@ class ResizableSelectionBox extends StatefulWidget {
   final double initialWidth;
   final double initialHeight;
   final Function(Rect) onSelectionChanged;
-  
+
   const ResizableSelectionBox({
     super.key,
     required this.initialWidth,
@@ -21,7 +21,7 @@ class _ResizableSelectionBoxState extends State<ResizableSelectionBox> {
   late double _height;
   late double _left;
   late double _top;
-  
+
   static const double _minSize = 100.0;
   static const double _handleSize = 20.0;
 
@@ -70,7 +70,7 @@ class _ResizableSelectionBoxState extends State<ResizableSelectionBox> {
       // 确保不小于最小尺寸
       _width = _width.clamp(_minSize, double.infinity);
       _height = _height.clamp(_minSize, double.infinity);
-      
+
       _updateSelection();
     });
   }
@@ -95,12 +95,8 @@ class _ResizableSelectionBoxState extends State<ResizableSelectionBox> {
     return Stack(
       children: [
         // 半透明背景
-        Positioned.fill(
-          child: Container(
-            color: Colors.black54,
-          ),
-        ),
-        
+        Positioned.fill(child: Container(color: Colors.black54)),
+
         // 选择框
         Positioned(
           left: _left,
@@ -116,12 +112,8 @@ class _ResizableSelectionBoxState extends State<ResizableSelectionBox> {
               child: Stack(
                 children: [
                   // 清除选择框内的半透明背景
-                  Positioned.fill(
-                    child: Container(
-                      color: Colors.transparent,
-                    ),
-                  ),
-                  
+                  Positioned.fill(child: Container(color: Colors.transparent)),
+
                   // 四角拖拽点
                   Positioned(
                     left: -_handleSize / 2,
@@ -153,10 +145,4 @@ class _ResizableSelectionBoxState extends State<ResizableSelectionBox> {
   }
 }
 
-enum _DragHandle {
-  topLeft,
-  topRight,
-  bottomLeft,
-  bottomRight,
-  body,
-}
+enum _DragHandle { topLeft, topRight, bottomLeft, bottomRight, body }

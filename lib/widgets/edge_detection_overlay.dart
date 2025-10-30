@@ -52,10 +52,7 @@ class EdgeDetectionPainter extends CustomPainter {
 
     // 转换坐标点
     final scaledPoints = corners.map((point) {
-      return Offset(
-        point.dx * scaleX,
-        point.dy * scaleY,
-      );
+      return Offset(point.dx * scaleX, point.dy * scaleY);
     }).toList();
 
     // 绘制边框

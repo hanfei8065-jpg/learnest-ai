@@ -203,4 +203,77 @@ class OpenAIService {
       return Exception('识别失败: ${error.toString()}');
     }
   }
+
+  /// 获取题目的解题过程和答案（新方法，用于做题页）
+  Future<Map<String, String>> getSolutionProcess(File imageFile) async {
+    try {
+      final base64Image = await _imageProcessor.convertToBase64(imageFile);
+      
+      final response = await http.post(
+        Uri.parse('$_baseUrl/v1/chat/completions'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_apiKey',
+        },
+        body: jsonEncode({
+          'model': 'gpt-4-vision-preview',
+          'messages': [
+            {
+              'role': 'user',
+              'content': [
+                {
+                  'type': 'text',
+                  'text': '''请分析这道题目，提供详细的解题过程和最终答案。
+                  
+要求：
+1. 解题过程要清晰、详细、循序渐进
+2. 包含必要的公式和计算步骤
+3. 用学生易懂的语言表达
+4. 最后单独给出最终答案
+
+请按以下JSON格式返回：
+{
+  "process": "详细的解题过程",
+  "answer": "最终答案"
+}'''
+                },
+                {
+                  'type': 'image_url',
+                  'image_url': {
+                    'url': 'data:image/jpeg;base64,$base64Image',
+                  }
+                }
+              ]
+            }
+          ],
+          'max_tokens': 2000,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        final content = data['choices'][0]['message']['content'] as String;
+        
+        // 解析JSON响应
+        final jsonMatch = RegExp(r'\{[\s\S]*\}').firstMatch(content);
+        if (jsonMatch != null) {
+          final resultJson = jsonDecode(jsonMatch.group(0)!);
+          return {
+            'process': resultJson['process'] as String,
+            'answer': resultJson['answer'] as String,
+          };
+        }
+        
+        // 如果无法解析JSON，返回原始内容
+        return {
+          'process': content,
+          'answer': '请查看解题过程',
+        };
+      } else {
+        throw Exception('API返回错误: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw _formatError(e);
+    }
+  }
 }

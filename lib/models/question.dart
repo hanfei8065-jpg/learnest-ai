@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'question_solution.dart';
 
 enum Subject { math, physics, chemistry }
-}
 
 enum QuestionType { choice, fill, application }
 
@@ -73,8 +72,9 @@ class Question {
       tags: List<String>.from(json['tags']),
       imagePath: json['imagePath'] as String?,
       isImageQuestion: json['isImageQuestion'] as bool? ?? false,
-      solution: json['solution'] != null ? 
-        QuestionSolution.fromJson(json['solution'] as Map<String, dynamic>) : null,
+      solution: json['solution'] != null
+          ? QuestionSolution.fromJson(json['solution'] as Map<String, dynamic>)
+          : null,
     );
   }
 

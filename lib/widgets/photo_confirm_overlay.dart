@@ -26,10 +26,8 @@ class _PhotoConfirmOverlayState extends State<PhotoConfirmOverlay> {
     return Stack(
       children: [
         // 全屏显示拍摄的图片
-        Positioned.fill(
-          child: widget.capturedImage,
-        ),
-        
+        Positioned.fill(child: widget.capturedImage),
+
         // 动画边框
         AnimatedBuilder(
           animation: widget.frameAnimation,
@@ -38,10 +36,7 @@ class _PhotoConfirmOverlayState extends State<PhotoConfirmOverlay> {
               child: Container(
                 margin: EdgeInsets.all(32 * (1 - widget.frameAnimation.value)),
                 decoration: BoxDecoration(
-                  border: Border.all(
-                    color: const Color(0xFF00A86B),
-                    width: 3,
-                  ),
+                  border: Border.all(color: const Color(0xFF00A86B), width: 3),
                 ),
               ),
             );
@@ -59,10 +54,7 @@ class _PhotoConfirmOverlayState extends State<PhotoConfirmOverlay> {
               gradient: LinearGradient(
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
-                colors: [
-                  Colors.black.withOpacity(0.8),
-                  Colors.transparent,
-                ],
+                colors: [Colors.black.withOpacity(0.8), Colors.transparent],
               ),
             ),
             child: SafeArea(
@@ -74,9 +66,7 @@ class _PhotoConfirmOverlayState extends State<PhotoConfirmOverlay> {
                     label: '重拍',
                     onTap: widget.onRetake,
                   ),
-                  _buildConfirmButton(
-                    onTap: widget.onConfirm,
-                  ),
+                  _buildConfirmButton(onTap: widget.onConfirm),
                   _buildActionButton(
                     icon: Icons.crop_rotate,
                     label: '调整',
@@ -90,7 +80,6 @@ class _PhotoConfirmOverlayState extends State<PhotoConfirmOverlay> {
       ],
     );
   }
-
 
   Widget _buildActionButton({
     required IconData icon,

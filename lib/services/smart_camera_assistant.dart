@@ -4,7 +4,8 @@ import 'package:camera/camera.dart';
 import '../utils/image_quality_analyzer.dart';
 
 class SmartCameraAssistant {
-  static final SmartCameraAssistant _instance = SmartCameraAssistant._internal();
+  static final SmartCameraAssistant _instance =
+      SmartCameraAssistant._internal();
   factory SmartCameraAssistant() => _instance;
   SmartCameraAssistant._internal();
 
@@ -15,7 +16,7 @@ class SmartCameraAssistant {
   int _stableFrameCount = 0;
   List<double> _recentMotions = [];
   CameraImage? _lastFrame;
-  
+
   static const int _requiredStableFrames = 10;
   static const double _motionThreshold = 0.02;
   static const double _exposureAdjustInterval = 0.2;
@@ -74,7 +75,8 @@ class SmartCameraAssistant {
       }
 
       // 检查稳定性
-      final averageMotion = _recentMotions.reduce((a, b) => a + b) / _recentMotions.length;
+      final averageMotion =
+          _recentMotions.reduce((a, b) => a + b) / _recentMotions.length;
       final isCurrentlyStable = averageMotion < _motionThreshold;
 
       if (isCurrentlyStable) {
@@ -98,7 +100,7 @@ class SmartCameraAssistant {
   Future<double> _calculateMotion(CameraImage currentFrame) async {
     // TODO: 实现基于亮度变化的运动检测
     if (currentFrame.planes.isEmpty) return 0.0;
-    
+
     final plane = currentFrame.planes[0];
     final data = plane.bytes;
     int sum = 0;
@@ -115,7 +117,9 @@ class SmartCameraAssistant {
       final image = _lastFrame;
       if (image == null) return;
 
-      final double exposureRange = controller.value.exposurePointSupported ? 2.0 : 1.0;
+      final double exposureRange = controller.value.exposurePointSupported
+          ? 2.0
+          : 1.0;
       final score = await ImageQualityAnalyzer.analyzeImageQuality(image);
 
       if (score.brightnessScore < 60) {

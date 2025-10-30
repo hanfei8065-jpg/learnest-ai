@@ -34,7 +34,8 @@ class CameraPage extends StatefulWidget {
   State<CameraPage> createState() => _CameraPageState();
 }
 
-class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateMixin {
+class _CameraPageState extends State<CameraPage>
+    with SingleTickerProviderStateMixin {
   // UI状态
   bool _hasCachedQuestions = false;
   bool _showGuide = false;
@@ -46,37 +47,37 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
   double _currentExposure = 0.0;
   double _maxExposure = 1.0;
   double _minExposure = -1.0;
-  
+
   // 模型管理
   final _modelManager = ModelManager();
-  
+
   // 多题目检测
   final _questionProcessor = MultiQuestionProcessor();
-  
+
   // 手动调整
   bool _isAdjusting = false;
   Rect? _selectedRect;
-  
+
   // 检测结果
   List<Rect> _detectedAreas = [];
   List<Question> _processedQuestions = [];
   int _currentQuestionIndex = 0;
-  
+
   // 相机预览状态
   RecognitionMode _mode = RecognitionMode.single;
   bool _isProcessing = false;
   List<Offset> _detectedCorners = [];
   final _questionDetector = QuestionDetectionService();
-  
+
   // 文件选择状态
   File? _selectedFile;
   bool _showSelectionBox = false;
   Rect _selectionRect = Rect.zero;
-  
+
   // 相机状态
   CameraState _cameraState = CameraState.initializing;
   Size _previewSize = const Size(1280, 720);
-  
+
   // 图片相关
   Image? _capturedImage;
   File? _imageFile;
@@ -86,7 +87,7 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
   // 动画控制
   late final AnimationController _frameAnimationController;
   late final Animation<double> _frameAnimation;
-  
+
   final int _maxRetries = 3;
 
   @override
@@ -96,7 +97,7 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    
+
     _frameAnimation = CurvedAnimation(
       parent: _frameAnimationController,
       curve: Curves.easeInOut,
@@ -142,7 +143,8 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
   }
 
   Future<void> _checkOfflineCache() async {
-    final hasCachedQuestions = await QuestionCacheService().hasOfflineQuestions();
+    final hasCachedQuestions = await QuestionCacheService()
+        .hasOfflineQuestions();
     setState(() {
       _hasCachedQuestions = hasCachedQuestions;
     });
@@ -183,22 +185,22 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
       print('Error loading test images: $e');
     }
   }
-  
+
   Future<void> _pickFile() async {
     try {
       final picker = ImagePicker();
       final XFile? file = await picker.pickImage(source: ImageSource.gallery);
-      
+
       if (file != null) {
         setState(() {
           _selectedFile = File(file.path);
           _showSelectionBox = true;
           // 初始化选择框为长条形
           _selectionRect = Rect.fromLTWH(
-            50,  // 左边距
-            _previewSize.height / 3,  // 垂直居中
-            _previewSize.width - 100,  // 宽度减去左右边距
-            100,  // 初始高度
+            50, // 左边距
+            _previewSize.height / 3, // 垂直居中
+            _previewSize.width - 100, // 宽度减去左右边距
+            100, // 初始高度
           );
         });
       }
@@ -206,18 +208,18 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
       print('Error picking file: $e');
     }
   }
-  
+
   void _handleSelectionChanged(Rect rect) {
     setState(() {
       _selectionRect = rect;
     });
   }
-  
+
   Future<void> _processSelectedArea() async {
     if (_selectedFile == null) return;
-    
+
     // TODO: 根据选择框位置裁剪图片
-    
+
     setState(() {
       _showSelectionBox = false;
       _cameraState = CameraState.confirm;
@@ -280,11 +282,13 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
       try {
         // 检测所有题目区域
         final questionAreas = await _modelManager.detectQuestions(file);
-        
+
         if (questionAreas.isNotEmpty) {
           // 处理检测到的题目
-          final questions = await _questionProcessor.processMultipleQuestions(file);
-          
+          final questions = await _questionProcessor.processMultipleQuestions(
+            file,
+          );
+
           setState(() {
             _detectedAreas = questionAreas;
             _processedQuestions = questions;
@@ -312,11 +316,11 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
           _isProcessing = false;
         });
       }
-      
+
       _frameAnimationController.forward();
     }
   }
-  
+
   void _handleConfirm() async {
     if (_capturedImage == null) return;
 
@@ -339,7 +343,7 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
         _imageFile!,
         _selectedRect ?? Rect.zero,
       );
-      
+
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -429,7 +433,7 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
                 });
               },
             ),
-            
+
           // 最佳实践提示
           if (_showBestPractices)
             CameraBestPractices(
@@ -440,19 +444,21 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
                 });
               },
             ),
-            
+
           // 相机预览
-          if (!_showDynamicGuide && !_showBestPractices && _cameraState == CameraState.preview)
+          if (!_showDynamicGuide &&
+              !_showBestPractices &&
+              _cameraState == CameraState.preview)
             CameraPreviewWidget(
               mode: RecognitionMode.single,
               onCapture: _takePicture,
-              onModeToggle: () {},  // 不需要切换模式
+              onModeToggle: () {}, // 不需要切换模式
               isProcessing: _cameraState == CameraState.processing,
               detectedCorners: const [], // 暂时不处理边角检测
               previewSize: _previewSize,
               errorMessage: _errorMessage,
             ),
-            
+
           // 照片确认
           if (_cameraState == CameraState.confirm && _capturedImage != null)
             PhotoConfirmOverlay(
@@ -462,7 +468,7 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
               onRetake: _handleRetake,
               onAdjust: _handleAdjust,
             ),
-            
+
           // 可拖拽选择框
           if (_showSelectionBox && _selectedFile != null)
             ResizableSelectionBox(
@@ -470,13 +476,10 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
               initialHeight: 100,
               onSelectionChanged: _handleSelectionChanged,
             ),
-            
+
           // 网格线
           if (_showGrid)
-            CustomPaint(
-              size: Size.infinite,
-              painter: grid.GridPainter(),
-            ),
+            CustomPaint(size: Size.infinite, painter: grid.GridPainter()),
 
           // 曝光滑块
           if (_showExposureSlider)
@@ -492,10 +495,7 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
                 ),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.brightness_6,
-                      color: Colors.white,
-                    ),
+                    const Icon(Icons.brightness_6, color: Colors.white),
                     Expanded(
                       child: Slider(
                         value: _currentExposure,
@@ -533,14 +533,10 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
               children: [
                 // 文件选择按钮
                 IconButton(
-                  icon: const Icon(
-                    Icons.folder,
-                    color: Colors.white,
-                    size: 32,
-                  ),
+                  icon: const Icon(Icons.folder, color: Colors.white, size: 32),
                   onPressed: _pickFile,
                 ),
-                
+
                 // 拍照按钮
                 GestureDetector(
                   onTap: _takePicture,
@@ -558,7 +554,7 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
                     ),
                   ),
                 ),
-                
+
                 // 网格线按钮
                 IconButton(
                   icon: Icon(

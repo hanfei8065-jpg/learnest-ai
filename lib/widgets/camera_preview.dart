@@ -46,11 +46,16 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final controller = CameraService().controller;
+    if (controller == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    
     return Stack(
       children: [
         // 智能相机预览
         SmartCameraPreview(
-          controller: CameraService().controller,
+          controller: controller,
           onIssuesChanged: _handleIssuesChanged,
           onReadyToCapture: _handleReadyToCapture,
           onCapture: widget.onCapture,
@@ -68,7 +73,7 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget> {
           detectedCorners: widget.detectedCorners,
           previewSize: widget.previewSize,
         ),
-        
+
         // 问题提示列表
         if (_currentIssues.isNotEmpty)
           Positioned(
@@ -76,10 +81,7 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget> {
             left: 20,
             right: 20,
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 8,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: Colors.black54,
                 borderRadius: BorderRadius.circular(8),
@@ -122,10 +124,7 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget> {
             right: 0,
             bottom: MediaQuery.of(context).padding.bottom + 100,
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 8,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: Colors.black54,
                 borderRadius: BorderRadius.circular(8),

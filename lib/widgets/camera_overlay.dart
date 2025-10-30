@@ -73,8 +73,8 @@ class CameraOverlay extends StatelessWidget {
                 margin: const EdgeInsets.all(32),
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: detectedCorners.length == 4 
-                        ? Colors.green 
+                    color: detectedCorners.length == 4
+                        ? Colors.green
                         : Colors.white,
                     width: 2,
                   ),

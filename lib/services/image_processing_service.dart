@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 
@@ -65,5 +66,11 @@ class ImageProcessingService {
       }
     }
     return processedFiles;
+  }
+
+  /// 将图片转换为Base64编码
+  Future<String> convertToBase64(File imageFile) async {
+    final bytes = await imageFile.readAsBytes();
+    return base64Encode(bytes);
   }
 }

@@ -6,21 +6,25 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/camera_service.dart';
-import '../services/question_cache_service.dart';
 import '../services/test_mode_service.dart';
 import '../services/openai_service.dart';
+import '../theme/theme.dart';
 import 'workspace_page.dart';
+import 'solving_page.dart';
+import 'calculator_selection_page.dart';
+import '../widgets/crop_bar_overlay.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/recognition_mode.dart';
 import '../models/camera_state.dart';
 import '../models/question.dart';
-import '../widgets/camera_permission_guide.dart';
+import '../widgets/permission_bubble.dart';
 import '../widgets/camera_preview.dart';
 import '../widgets/dynamic_camera_guide.dart';
 import '../widgets/camera_best_practices.dart';
 import '../widgets/photo_confirm_overlay.dart';
-import 'cached_questions_page.dart';
+import '../widgets/capture_mode_selector.dart';
+import '../widgets/camera_corner_frame.dart';
 import 'question_result_page.dart';
-import '../widgets/grid_painter.dart' as grid;
 
 class CameraPage extends StatefulWidget {
   const CameraPage({super.key});
@@ -29,35 +33,26 @@ class CameraPage extends StatefulWidget {
   State<CameraPage> createState() => _CameraPageState();
 }
 
-class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateMixin {
+class _CameraPageState extends State<CameraPage>
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   // UI状态
-  bool _hasCachedQuestions = false;
   bool _showGuide = false;
   bool _showBestPractices = false;
   bool _showDynamicGuide = false;
-  bool _showGrid = true;
   bool _isFlashOn = false;
-  bool _showExposureSlider = false;
-  double _currentExposure = 0.0;
-  double _maxExposure = 1.0;
-  double _minExposure = -1.0;
-  
-  // 计时器状态
-  Timer? _countdownTimer;
-  int _countdownSeconds = 0;
-  bool _showTimer = false;
+  bool _showPermissionBubble = false;
 
-    // 批处理状态
+  // 批处理状态
   List<File> _batchImages = [];
   RecognitionMode _mode = RecognitionMode.single;
-  
+
   // 边缘检测状态
   Timer? _edgeDetectionTimer;
-  
+
   // 相机状态
   CameraState _cameraState = CameraState.initializing;
   Size _previewSize = const Size(1280, 720);
-  
+
   // 图片相关
   Image? _capturedImage;
   File? _imageFile;
@@ -67,11 +62,12 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
   // 动画控制
   late final AnimationController _frameAnimationController;
   late final Animation<double> _frameAnimation;
-  
+
   final int _maxRetries = 3;
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _cameraState = CameraState.initializing;
     _frameAnimationController = AnimationController(
       duration: const Duration(milliseconds: 300),
@@ -82,6 +78,33 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
       curve: Curves.easeInOut,
     );
     _init();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    print('🔄 应用生命周期变化: $state');
+    // 当应用从后台回到前台时，重新检查权限
+    if (state == AppLifecycleState.resumed) {
+      print('⏰ 应用恢复前台，重新检查权限');
+      _recheckPermissionAfterResume();
+    }
+  }
+
+  Future<void> _recheckPermissionAfterResume() async {
+    final wasShowingBubble = _showPermissionBubble;
+    await _checkCameraPermission();
+
+    // 如果之前显示气泡，现在权限已授予，显示成功提示
+    if (wasShowingBubble && !_showPermissionBubble && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('相机权限已开启'),
+          duration: Duration(seconds: 1),
+          backgroundColor: Color(0xFF00A86B),
+        ),
+      );
+    }
   }
 
   Future<void> _init() async {
@@ -95,34 +118,9 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
       await _loadTestImages();
     }
   }
-  
 
-
-  Future<void> _startCountdown() async {
-    setState(() {
-      _countdownSeconds = 3;
-    });
-
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        if (_countdownSeconds > 1) {
-          _countdownSeconds--;
-        } else {
-          _countdownTimer?.cancel();
-          _countdownSeconds = 0;
-          _takePicture();
-        }
-      });
-    });
-  }
-  
   Future<void> _takePicture() async {
     if (_cameraState != CameraState.preview) return;
-
-    if (_showTimer && _countdownSeconds == 0) {
-      await _startCountdown();
-      return;
-    }
 
     setState(() {
       _showBestPractices = false;
@@ -130,13 +128,15 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
     });
 
     File? imageFile;
-    String? error;
 
     // 先对焦
     try {
       if (!TestModeService().isTestMode) {
-        await CameraService().controller.setFocusMode(FocusMode.auto);
-        await Future.delayed(const Duration(milliseconds: 300));
+        final controller = CameraService().controller;
+        if (controller != null) {
+          await controller.setFocusMode(FocusMode.auto);
+          await Future.delayed(const Duration(milliseconds: 300));
+        }
       }
     } catch (e) {
       print('Focus error: $e');
@@ -158,7 +158,10 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
         imageFile = _testImages.first;
         _testImages.removeAt(0);
       } else {
-        error = '测试图片已用完';
+        setState(() {
+          _errorMessage = '测试图片已用完';
+        });
+        return;
       }
     } else {
       try {
@@ -175,6 +178,21 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
     if (imageFile != null) {
       final file = imageFile.absolute;
       if (_mode == RecognitionMode.batch) {
+        // 多题模式最多3题
+        if (_batchImages.length >= 3) {
+          setState(() {
+            _errorMessage = '最多只能拍摄3道题';
+          });
+          Future.delayed(const Duration(seconds: 2), () {
+            if (mounted) {
+              setState(() {
+                _errorMessage = null;
+              });
+            }
+          });
+          return;
+        }
+        
         setState(() {
           _batchImages.add(file);
           _cameraState = CameraState.preview;
@@ -224,14 +242,21 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
                       MaterialPageRoute(
                         builder: (_) => QuestionResultPage(
                           isCorrect: true,
-                          content: result['question'] as String,
+                          question: result['question'] as String,
                           answer: result['answer'] as String,
                           explanation: result['explanation'] as String,
-                          subject: Subject.values.firstWhere(
-                            (s) => s.toString().toLowerCase() == (result['subject'] as String).toLowerCase(),
-                            orElse: () => Subject.math,
-                          ),
-                          difficulty: int.tryParse(result['difficulty'] as String) ?? 1,
+                          subject: Subject.values
+                              .firstWhere(
+                                (s) =>
+                                    s.toString().toLowerCase() ==
+                                    (result['subject'] as String).toLowerCase(),
+                                orElse: () => Subject.math,
+                              )
+                              .name,
+                          difficulty:
+                              (int.tryParse(result['difficulty'] as String) ??
+                                      1)
+                                  .toString(),
                         ),
                       ),
                     );
@@ -272,11 +297,7 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
   }
 
   Future<void> _checkOfflineCache() async {
-    final hasCachedQuestions = await QuestionCacheService()
-        .hasOfflineQuestions();
-    setState(() {
-      _hasCachedQuestions = hasCachedQuestions;
-    });
+    // 暂时不需要检查缓存
   }
 
   Future<void> _checkShowGuide() async {
@@ -317,7 +338,7 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
 
   @override
   void dispose() {
-    _countdownTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     _frameAnimationController.dispose();
     if (!TestModeService().isTestMode) {
       CameraService().dispose();
@@ -326,44 +347,60 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
   }
 
   Future<void> _checkCameraPermission() async {
+    print('🔍 检查相机权限...');
     final status = await Permission.camera.status;
-    if (status.isGranted) {
+    print('📷 相机权限状态: $status');
+    print('📹 当前相机状态: $_cameraState');
+    print('💬 气泡显示状态: $_showPermissionBubble');
+    
+    // 临时：跳过权限检查，直接初始化相机
+    print('✅ 临时强制认为权限已授予');
+    // 只有在相机未初始化时才初始化
+    if (_cameraState != CameraState.preview &&
+        _cameraState != CameraState.processing) {
+      print('🚀 开始初始化相机...');
       await _initCamera();
-    } else if (status.isPermanentlyDenied) {
-      setState(() {
-        _errorMessage = '相机权限被永久拒绝，请在系统设置中手动开启';
-      });
     } else {
-      final result = await Permission.camera.request();
-      if (result.isGranted) {
-        await _initCamera();
-      } else {
+      print('✓ 相机已初始化，只需隐藏气泡');
+      // 已经初始化，只需隐藏气泡
+      if (mounted) {
         setState(() {
-          _errorMessage = '需要相机权限才能使用该功能';
+          _showPermissionBubble = false;
         });
       }
     }
   }
 
   Future<void> _initCamera() async {
+    print('📸 _initCamera 开始执行');
     try {
+      print('1️⃣ 调用 CameraService().initialize()');
       await CameraService().initialize();
+      print('2️⃣ 相机初始化成功，开始图像流');
       await CameraService().startImageStream(_processImageStream);
+      print('3️⃣ 图像流启动成功');
 
-      setState(() {
-        _previewSize = Size(
-          CameraService().previewSize?.width ?? 1280,
-          CameraService().previewSize?.height ?? 720,
-        );
-      });
+      if (mounted) {
+        setState(() {
+          _previewSize = Size(
+            CameraService().previewSize?.width ?? 1280,
+            CameraService().previewSize?.height ?? 720,
+          );
+          _cameraState = CameraState.preview;
+          _showPermissionBubble = false;
+        });
+        print('✨ 相机初始化完成，状态已更新');
+      }
     } catch (e) {
-      setState(() {
-        _errorMessage = '相机初始化失败：$e';
-      });
+      print('❌ 相机初始化失败: $e');
+      if (mounted) {
+        setState(() {
+          _errorMessage = '相机初始化失败：$e';
+          _cameraState = CameraState.initializing;
+        });
+      }
     }
   }
-
-
 
   void _processImageStream(CameraImage image) {
     // 限制边缘检测的频率，避免过度消耗资源
@@ -380,16 +417,27 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
   }
 
   void _handleConfirm() async {
-    if (_capturedImage == null) return;
-    
-    setState(() {
-      _cameraState = CameraState.processing;
-      _capturedImage = null;
-    });
+    if (_capturedImage == null || _imageFile == null) return;
+
     await _frameAnimationController.reverse();
-    // 继续处理识别
-    if (_imageFile != null) {
-      await _processImage(_imageFile!);
+
+    // 跳转到新的解题页
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SolvingPage(
+            questionImages: [_imageFile!], // 单题模式
+          ),
+        ),
+      );
+
+      // 返回预览状态
+      setState(() {
+        _cameraState = CameraState.preview;
+        _capturedImage = null;
+        _imageFile = null;
+      });
     }
   }
 
@@ -406,7 +454,88 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
     // TODO: 实现图片调整功能
   }
 
+  /// 从相册/文件系统选择图片或PDF
+  Future<void> _pickImageFromGallery() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+      
+      if (image != null) {
+        final File file = File(image.path);
+        
+        // 跳转到长条裁剪框模式
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CropBarOverlay(
+                imageFile: file,
+                onConfirm: () {
+                  Navigator.pop(context); // 关闭crop overlay
+                  // 直接导航到solving page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SolvingPage(
+                        questionImages: [file],
+                      ),
+                    ),
+                  );
+                },
+                onCancel: () {
+                  Navigator.pop(context);
+                },
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = '图片选择失败：$e';
+      });
+    }
+  }
 
+    /// 手电筒开关处理
+  Future<void> _handleFlashlightToggle() async {
+    final controller = CameraService().controller;
+    if (controller == null || !controller.value.isInitialized) {
+      return;
+    }
+
+    try {
+      setState(() {
+        _isFlashOn = !_isFlashOn;
+      });
+      await controller.setFlashMode(
+        _isFlashOn ? FlashMode.torch : FlashMode.off,
+      );
+    } catch (e) {
+      setState(() {
+        _errorMessage = '手电筒控制失败：$e';
+      });
+    }
+  }
+
+  /// 进入解题页（多题模式）
+  void _enterSolvingPage() {
+    if (_batchImages.isEmpty) return;
+    
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SolvingPage(
+          questionImages: _batchImages, // 传递多张图片（1-3题）
+        ),
+      ),
+    );
+    
+    // 清空批量图片
+    setState(() {
+      _batchImages.clear();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -466,7 +595,7 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
                 });
               },
             ),
-            
+
           // 最佳实践
           if (_showBestPractices)
             CameraBestPractices(
@@ -477,9 +606,22 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
                 });
               },
             ),
-            
+
+          // 相机预览占位（权限未授权时显示）
+          if (!_showDynamicGuide &&
+              !_showBestPractices &&
+              _cameraState == CameraState.initializing)
+            Container(
+              color: Colors.black87,
+              child: const Center(
+                child: Icon(Icons.camera_alt, size: 100, color: Colors.black45),
+              ),
+            ),
+
           // 相机预览
-          if (!_showDynamicGuide && !_showBestPractices && _cameraState == CameraState.preview)
+          if (!_showDynamicGuide &&
+              !_showBestPractices &&
+              _cameraState == CameraState.preview)
             CameraPreviewWidget(
               mode: _mode,
               onCapture: _takePicture,
@@ -498,7 +640,7 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
               isProcessing: _cameraState == CameraState.processing,
               detectedCorners: [],
             ),
-            
+
           // 照片确认
           if (_cameraState == CameraState.confirm && _capturedImage != null)
             PhotoConfirmOverlay(
@@ -508,49 +650,16 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
               onRetake: _handleRetake,
               onAdjust: _handleAdjust,
             ),
-            
-          // 权限引导
-          if (!_showDynamicGuide && !_showBestPractices && _errorMessage == null)
-            CameraPermissionGuide(onPermissionGranted: _initCamera),
 
-          if (_showGrid)
-            CustomPaint(size: Size.infinite, painter: grid.GridPainter()),
-
-          if (_showExposureSlider)
-            Positioned(
-              top: 20,
-              left: 0,
-              right: 0,
-              child: Container(
-                color: Colors.black54,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.brightness_6, color: Colors.white),
-                    Expanded(
-                      child: Slider(
-                        value: _currentExposure,
-                        min: _minExposure,
-                        max: _maxExposure,
-                        onChanged: (value) {
-                          setState(() {
-                            _currentExposure = value;
-                          });
-                          CameraService().controller.setExposureOffset(value);
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+          // 四个90度角抓手取景框
+          if (_cameraState == CameraState.preview)
+            CameraCornerFrame(
+              frameSize: 280,
+              cornerLength: 40,
+              cornerWidth: 4,
             ),
 
-
-
-          if (_cameraState == CameraState.processing) 
+          if (_cameraState == CameraState.processing)
             const Center(child: CircularProgressIndicator()),
 
           if (_errorMessage != null)
@@ -561,16 +670,143 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
               ),
             ),
 
+          // 右上角计算器图标
           Positioned(
-            bottom: 20,
+            top: 50,
+            right: 16,
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const CalculatorSelectionPage(),
+                  ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.5),
+                    width: 1.5,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.dialpad,
+                  color: Colors.white,
+                  size: 32,
+                ),
+              ),
+            ),
+          ),
+
+          // 拍照键上方的模式选择器
+          Positioned(
+            bottom: 140,
             left: 0,
             right: 0,
-            child: Column(
+            child: CaptureModeSelector(
+              currentMode: _mode,
+              onModeChanged: (mode) {
+                setState(() {
+                  _mode = mode;
+                  // 切换模式时清空批量图片
+                  if (mode == RecognitionMode.single) {
+                    _batchImages.clear();
+                  }
+                });
+              },
+            ),
+          ),
+
+          // 底部控制区：左侧文件夹、中心拍照按钮、右侧手电筒
+          Positioned(
+            bottom: 40,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                if (_mode == RecognitionMode.batch && _batchImages.isNotEmpty)
+                // 左侧：文件夹图标
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.3),
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.folder_outlined,
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                    onPressed: _pickImageFromGallery,
+                  ),
+                ),
+                
+                // 中心：拍照按钮
+                GestureDetector(
+                  onTap: _takePicture,
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                      border: Border.all(
+                        color: AppTheme.brandPrimary,
+                        width: 4,
+                      ),
+                    ),
+                    child: Center(
+                      child: Container(
+                        width: 68,
+                        height: 68,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppTheme.brandPrimary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                
+                // 右侧：手电筒图标
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.3),
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    icon: Icon(
+                      _isFlashOn ? Icons.flashlight_on : Icons.flashlight_off,
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                    onPressed: _handleFlashlightToggle,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // 多题模式：显示已拍摄的缩略图和进入做题页按钮
+          if (_mode == RecognitionMode.batch && _batchImages.isNotEmpty)
+            Positioned(
+              bottom: 140,
+              left: 0,
+              right: 0,
+              child: Column(
+                children: [
                   Container(
                     height: 60,
-                    margin: const EdgeInsets.only(bottom: 20),
+                    margin: const EdgeInsets.only(bottom: 12),
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -581,7 +817,11 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
                           height: 60,
                           margin: const EdgeInsets.symmetric(horizontal: 4),
                           decoration: BoxDecoration(
-                            border: Border.all(color: Colors.white),
+                            border: Border.all(
+                              color: AppTheme.brandPrimary,
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
                             image: DecorationImage(
                               image: FileImage(_batchImages[index]),
                               fit: BoxFit.cover,
@@ -591,87 +831,47 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
                       },
                     ),
                   ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        _isFlashOn ? Icons.flash_on : Icons.flash_off,
+                  ElevatedButton(
+                    onPressed: _enterSolvingPage,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.brandPrimary,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 32,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                    ),
+                    child: Text(
+                      '进入解题页 (${_batchImages.length}题)',
+                      style: const TextStyle(
                         color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
-                      onPressed: () async {
-                        setState(() {
-                          _isFlashOn = !_isFlashOn;
-                        });
-                        await CameraService().setFlashMode(_isFlashOn);
-                      },
                     ),
-                    IconButton(
-                      icon: Icon(
-                        _mode == RecognitionMode.single
-                            ? Icons.camera_alt
-                            : Icons.camera,
-                        color: Colors.white,
-                      ),
-                      onPressed: () => setState(() {
-                        _mode = _mode == RecognitionMode.single
-                            ? RecognitionMode.batch
-                            : RecognitionMode.single;
-                        if (_mode == RecognitionMode.single) {
-                          _batchImages.clear();
-                        }
-                      }),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.grid_on,
-                        color: _showGrid ? Colors.yellow : Colors.white,
-                      ),
-                      onPressed: () => setState(() {
-                        _showGrid = !_showGrid;
-                      }),
-                    ),
-
-                    IconButton(
-                      icon: Icon(
-                        Icons.brightness_6,
-                        color: _showExposureSlider
-                            ? Colors.yellow
-                            : Colors.white,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _showExposureSlider = !_showExposureSlider;
-                        });
-                      },
-                    ),
-                    if (_hasCachedQuestions)
-                      IconButton(
-                        icon: const Icon(Icons.history, color: Colors.white),
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const CachedQuestionsPage(),
-                          ),
-                        ),
-                      ),
-                    IconButton(
-                      icon: const Icon(Icons.help_outline, color: Colors.white),
-                      onPressed: () => setState(() => _showGuide = true),
-                    ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
-          ),
+
+          // 权限气泡提示 - 放在最上层确保可以点击
+          if (_showPermissionBubble &&
+              !_showDynamicGuide &&
+              !_showBestPractices)
+            PermissionBubble(
+              onDismiss: () async {
+                setState(() {
+                  _showPermissionBubble = false;
+                });
+                // 关闭气泡后重新检查权限
+                await _checkCameraPermission();
+              },
+            ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _takePicture,
-        child: const Icon(Icons.camera),
-      ),
-      bottomNavigationBar:
-          _mode == RecognitionMode.batch && _batchImages.isNotEmpty
+      bottomNavigationBar: _mode == RecognitionMode.batch && _batchImages.isNotEmpty
           ? Container(
               color: Colors.black54,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -704,5 +904,3 @@ class _CameraPageState extends State<CameraPage> with SingleTickerProviderStateM
     );
   }
 }
-
-

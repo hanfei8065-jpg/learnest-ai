@@ -3,10 +3,8 @@ import 'package:flutter/material.dart';
 class CameraBestPractices extends StatelessWidget {
   final VoidCallback onClose;
 
-  const CameraBestPractices({
-    Key? key,
-    required this.onClose,
-  }) : super(key: key);
+  const CameraBestPractices({Key? key, required this.onClose})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -156,10 +154,7 @@ class _PracticeExample extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        border: Border.all(
-          color: isGood ? Colors.green : Colors.red,
-          width: 2,
-        ),
+        border: Border.all(color: isGood ? Colors.green : Colors.red, width: 2),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -176,19 +171,13 @@ class _PracticeExample extends StatelessWidget {
             aspectRatio: 4 / 3,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(4),
-              child: Image.asset(
-                imageAsset,
-                fit: BoxFit.cover,
-              ),
+              child: Image.asset(imageAsset, fit: BoxFit.cover),
             ),
           ),
           const SizedBox(height: 8),
           Text(
             description,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 12,
-            ),
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
             textAlign: TextAlign.center,
           ),
         ],

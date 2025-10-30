@@ -8,17 +8,20 @@ class ImageQualityAnalyzer {
   static const double minimumEdgeScore = 0.6;
 
   /// 分析图像质量，返回 0-100 的评分
-  static Future<ImageQualityScore> analyzeImageQuality(CameraImage image) async {
+  static Future<ImageQualityScore> analyzeImageQuality(
+    CameraImage image,
+  ) async {
     final brightnessScore = await _analyzeBrightness(image);
     final sharpnessScore = await _analyzeSharpness(image);
     final edgeScore = await _analyzeEdges(image);
     final angleScore = await _analyzeAngle(image);
 
-    final totalScore = (brightnessScore * 0.25 +
-            sharpnessScore * 0.3 +
-            edgeScore * 0.25 +
-            angleScore * 0.2)
-        .round();
+    final totalScore =
+        (brightnessScore * 0.25 +
+                sharpnessScore * 0.3 +
+                edgeScore * 0.25 +
+                angleScore * 0.2)
+            .round();
 
     return ImageQualityScore(
       totalScore: totalScore,
@@ -38,19 +41,20 @@ class ImageQualityAnalyzer {
   static Future<int> _analyzeBrightness(CameraImage image) async {
     final yPlane = image.planes[0].bytes;
     int totalBrightness = 0;
-    
+
     for (int i = 0; i < yPlane.length; i++) {
       totalBrightness += yPlane[i];
     }
-    
+
     final averageBrightness = totalBrightness / yPlane.length;
-    
+
     if (averageBrightness < minimumBrightness) {
       return ((averageBrightness / minimumBrightness) * 100).round();
     } else if (averageBrightness > maximumBrightness) {
-      return (((255 - averageBrightness) / (255 - maximumBrightness)) * 100).round();
+      return (((255 - averageBrightness) / (255 - maximumBrightness)) * 100)
+          .round();
     }
-    
+
     return 100;
   }
 
@@ -60,7 +64,7 @@ class ImageQualityAnalyzer {
     final width = image.width;
     final height = image.height;
     double totalVariance = 0;
-    
+
     for (int y = 1; y < height - 1; y++) {
       for (int x = 1; x < width - 1; x++) {
         final int center = yPlane[y * width + x];
@@ -68,19 +72,19 @@ class ImageQualityAnalyzer {
         final int bottom = yPlane[(y + 1) * width + x];
         final int left = yPlane[y * width + (x - 1)];
         final int right = yPlane[y * width + (x + 1)];
-        
+
         final laplacian = (center * 4 - top - bottom - left - right).abs();
         totalVariance += laplacian;
       }
     }
-    
+
     final averageVariance = totalVariance / (width * height);
     final normalizedSharpness = math.min(1.0, averageVariance / 100);
-    
+
     if (normalizedSharpness < minimumSharpness) {
       return ((normalizedSharpness / minimumSharpness) * 100).round();
     }
-    
+
     return 100;
   }
 
@@ -90,7 +94,7 @@ class ImageQualityAnalyzer {
     final width = image.width;
     final height = image.height;
     double totalEdgeStrength = 0;
-    
+
     for (int y = 1; y < height - 1; y++) {
       for (int x = 1; x < width - 1; x++) {
         final gx = yPlane[y * width + (x + 1)] - yPlane[y * width + (x - 1)];
@@ -99,14 +103,14 @@ class ImageQualityAnalyzer {
         totalEdgeStrength += gradient;
       }
     }
-    
+
     final averageEdgeStrength = totalEdgeStrength / (width * height);
     final normalizedEdgeScore = math.min(1.0, averageEdgeStrength / 50);
-    
+
     if (normalizedEdgeScore < minimumEdgeScore) {
       return ((normalizedEdgeScore / minimumEdgeScore) * 100).round();
     }
-    
+
     return 100;
   }
 

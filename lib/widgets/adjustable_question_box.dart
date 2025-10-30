@@ -101,10 +101,9 @@ class _AdjustableQuestionBoxState extends State<AdjustableQuestionBox> {
   }
 
   Rect _constrainRect(Rect rect) {
-    final imageRect = Offset.zero & Size(
-      widget.image.width.toDouble(),
-      widget.image.height.toDouble(),
-    );
+    final imageRect =
+        Offset.zero &
+        Size(widget.image.width.toDouble(), widget.image.height.toDouble());
 
     // 约束左上角
     var left = rect.left.clamp(imageRect.left, imageRect.right);
@@ -123,16 +122,13 @@ class _AdjustableQuestionBoxState extends State<AdjustableQuestionBox> {
       children: [
         // 背景遮罩
         _buildMask(),
-        
+
         // 选择框
         Positioned.fromRect(
           rect: _currentRect,
           child: Container(
             decoration: BoxDecoration(
-              border: Border.all(
-                color: Colors.blue,
-                width: 2,
-              ),
+              border: Border.all(color: Colors.blue, width: 2),
             ),
           ),
         ),
@@ -145,15 +141,11 @@ class _AdjustableQuestionBoxState extends State<AdjustableQuestionBox> {
           rect: _currentRect,
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
-            onPanStart: (details) => _handleDragStart(
-              details.localPosition,
-              _DragHandle.whole,
-            ),
+            onPanStart: (details) =>
+                _handleDragStart(details.localPosition, _DragHandle.whole),
             onPanUpdate: (details) => _handleDragUpdate(details.localPosition),
             onPanEnd: (_) => _handleDragEnd(),
-            child: Container(
-              color: Colors.transparent,
-            ),
+            child: Container(color: Colors.transparent),
           ),
         ),
       ],
@@ -223,13 +215,7 @@ class _AdjustableQuestionBoxState extends State<AdjustableQuestionBox> {
   }
 }
 
-enum _DragHandle {
-  topLeft,
-  topRight,
-  bottomLeft,
-  bottomRight,
-  whole,
-}
+enum _DragHandle { topLeft, topRight, bottomLeft, bottomRight, whole }
 
 class _DragHandleWidget extends StatelessWidget {
   final Function(Offset) onDragStart;
@@ -266,10 +252,7 @@ class _MaskPainter extends CustomPainter {
   final Rect rect;
   final Size imageSize;
 
-  _MaskPainter({
-    required this.rect,
-    required this.imageSize,
-  });
+  _MaskPainter({required this.rect, required this.imageSize});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -278,16 +261,10 @@ class _MaskPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     // 绘制整个遮罩
-    canvas.drawRect(
-      Offset.zero & imageSize,
-      paint,
-    );
+    canvas.drawRect(Offset.zero & imageSize, paint);
 
     // 清除选中区域的遮罩
-    canvas.drawRect(
-      rect,
-      Paint()..blendMode = BlendMode.clear,
-    );
+    canvas.drawRect(rect, Paint()..blendMode = BlendMode.clear);
   }
 
   @override

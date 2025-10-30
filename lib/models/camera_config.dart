@@ -1,7 +1,4 @@
-enum CameraMode {
-  single,
-  batch,
-}
+enum CameraMode { single, batch }
 
 class CameraConfig {
   final double exposureOffset;

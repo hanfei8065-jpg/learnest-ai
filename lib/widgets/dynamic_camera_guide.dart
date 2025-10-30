@@ -56,10 +56,7 @@ class _DynamicCameraGuideState extends State<DynamicCameraGuide>
       vsync: this,
     )..repeat(reverse: true);
 
-    _animation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    );
+    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
   }
 
   @override
@@ -90,11 +87,7 @@ class _DynamicCameraGuideState extends State<DynamicCameraGuide>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const SizedBox(height: 20),
-            Icon(
-              step.icon,
-              size: 48,
-              color: Colors.white,
-            ),
+            Icon(step.icon, size: 48, color: Colors.white),
             const SizedBox(height: 20),
             Text(
               step.title,
@@ -110,16 +103,11 @@ class _DynamicCameraGuideState extends State<DynamicCameraGuide>
               child: Text(
                 step.description,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 16,
-                ),
+                style: const TextStyle(color: Colors.white70, fontSize: 16),
               ),
             ),
             const SizedBox(height: 40),
-            Expanded(
-              child: step.animation(_animation),
-            ),
+            Expanded(child: step.animation(_animation)),
             const SizedBox(height: 40),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -143,10 +131,7 @@ class _DynamicCameraGuideState extends State<DynamicCameraGuide>
               onPressed: _nextStep,
               child: Text(
                 _currentStep < _steps.length - 1 ? '下一步' : '开始拍摄',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                ),
+                style: const TextStyle(color: Colors.white, fontSize: 18),
               ),
             ),
             const SizedBox(height: 20),
@@ -169,11 +154,7 @@ class _DynamicCameraGuideState extends State<DynamicCameraGuide>
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Center(
-              child: Icon(
-                Icons.phone_android,
-                size: 48,
-                color: Colors.white,
-              ),
+              child: Icon(Icons.phone_android, size: 48, color: Colors.white),
             ),
           ),
         );
@@ -190,11 +171,7 @@ class _DynamicCameraGuideState extends State<DynamicCameraGuide>
           child: Stack(
             alignment: Alignment.center,
             children: [
-              const Icon(
-                Icons.photo_camera,
-                size: 48,
-                color: Colors.white,
-              ),
+              const Icon(Icons.photo_camera, size: 48, color: Colors.white),
               Positioned(
                 bottom: 50 + animation.value * 50,
                 child: Container(
@@ -204,10 +181,7 @@ class _DynamicCameraGuideState extends State<DynamicCameraGuide>
                     border: Border.all(color: Colors.white, width: 2),
                   ),
                   child: const Center(
-                    child: Text(
-                      '试卷',
-                      style: TextStyle(color: Colors.white),
-                    ),
+                    child: Text('试卷', style: TextStyle(color: Colors.white)),
                   ),
                 ),
               ),
@@ -242,10 +216,7 @@ class _DynamicCameraGuideState extends State<DynamicCameraGuide>
                   border: Border.all(color: Colors.white, width: 2),
                 ),
                 child: const Center(
-                  child: Text(
-                    '试卷',
-                    style: TextStyle(color: Colors.white),
-                  ),
+                  child: Text('试卷', style: TextStyle(color: Colors.white)),
                 ),
               ),
               for (double angle = 0; angle < 360; angle += 45)
@@ -291,10 +262,7 @@ class _DynamicCameraGuideState extends State<DynamicCameraGuide>
                   ),
                 ),
                 child: const Center(
-                  child: Text(
-                    '试卷',
-                    style: TextStyle(color: Colors.white),
-                  ),
+                  child: Text('试卷', style: TextStyle(color: Colors.white)),
                 ),
               ),
               for (int i = 0; i < 4; i++)

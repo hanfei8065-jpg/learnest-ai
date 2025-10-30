@@ -115,14 +115,19 @@ class MyApp extends StatelessWidget {
             return MaterialPageRoute(
               builder: (context) => QuestionResultPage(
                 isCorrect: args['isCorrect'] as bool,
-                content: args['question'] as String,
+                question: args['question'] as String,
                 answer: args['answer'] as String,
                 explanation: args['explanation'] as String,
-                subject: model.Subject.values.firstWhere(
-                  (s) => s.toString().toLowerCase() == (args['subject'] as String).toLowerCase(),
-                  orElse: () => model.Subject.math,
-                ),
-                difficulty: int.tryParse(args['difficulty'] as String) ?? 1,
+                subject: model.Subject.values
+                    .firstWhere(
+                      (s) =>
+                          s.toString().toLowerCase() ==
+                          (args['subject'] as String).toLowerCase(),
+                      orElse: () => model.Subject.math,
+                    )
+                    .name,
+                difficulty: (int.tryParse(args['difficulty'] as String) ?? 1)
+                    .toString(),
               ),
             );
           default:

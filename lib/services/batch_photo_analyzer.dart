@@ -33,7 +33,9 @@ class BatchPhotoAnalyzer {
     bool isAcceptable = true;
 
     // 质量分析
-    final qualityScore = await ImageQualityAnalyzer.analyzeImageQuality(newImage);
+    final qualityScore = await ImageQualityAnalyzer.analyzeImageQuality(
+      newImage,
+    );
     if (qualityScore.totalScore < _minQualityScore) {
       qualityWarnings.addAll(qualityScore.issues);
       isAcceptable = false;
